@@ -1,0 +1,102 @@
+Investigations into the Epidemiology of Particulate Matter and Obesity
+=========================================================================
+
+```{r data-entry, echo=FALSE, message=FALSE, warning=FALSE}
+annual.1990.data.location <- 'http://aqsdr1.epa.gov/aqsweb/aqstmp/airdata/annual_all_1990.zip'
+#annual.1990.data_archive <- '../data/raw/annual_all_1990.zip'
+#download.file(annual.1990.data.location, destfile=annual.1990.data_archive, method='curl')
+#unzip(annual.1990.data_archive, exdir='../data/raw/')
+annual.1990.data.file <- '../data/raw/annual_all_1990.csv'
+annual.1990.data <- read.csv(annual.1990.data.file)
+
+pm10.1990.data <- droplevels(annual.1990.data[annual.1990.data$Parameter.Name=="PM10 Total 0-10um STP",])
+library(plyr)
+summarize.county.pm10 <- ddply(pm10.1990.data, .(County.Name), summarize, 
+                           pm10.mean=mean(Arithmetic.Mean))
+
+obesity.data.location <- 'http://www.cdc.gov/diabetes/atlas/countydata/OBPREV/OB_PREV_ALL_STATES.xls'
+obesity.data.file <- '../data/raw/obesity_prevalance_all_states.xls'
+#download.file(obesity.data.location, destfile=obesity.data.file, method='curl')
+
+library(xlsx)
+obesity.data <- read.xlsx2(obesity.data.file, sheetIndex=1, startRow=2)
+obesity.data$age.adjusted.percent <- as.numeric(as.character(obesity.data$age.adjusted.percent))
+
+summarize.county.obesity <- ddply(obesity.data, .(County), summarize,
+                              obesity.mean=mean(age.adjusted.percent))
+```
+
+Obesity Data
+-------------
+
+The PM2.5 data was downloaded from `r obesity.data.location` and saved to `r obesity.data.file`.
+
+According to these data, the counties with the highest age adjusted percent obesity are:
+
+```{r obesity-table, results='asis', echo=FALSE}
+library(xtable)
+print(xtable(head(summarize.county.obesity[order(-summarize.county.obesity$obesity.mean),]), caption="Top 5 Counties by Age-Adjusted Obesity"), type='html')
+```
+
+Particulate Data
+--------------------
+
+The PM2.5 data was downloaded from `r annual.1990.data.location` and saved to `r annual.1990.data.file`.  According to this, in 1990 the counties with the highest particulate matter levels were:
+
+```{r pm-table, results='asis', echo=FALSE}
+print(xtable(head(summarize.county.pm10[order(-summarize.county.pm10$pm10.mean),]), caption="Top 5 Counties by PM10 Levels in 1990"), type='html')
+```
+
+Combined Data
+--------------
+
+```{r combined-data, dev=c('pdf','png'), echo=FALSE, warning=FALSE}
+summarize.county.pm10$County <- paste(summarize.county.pm10$County, "County")
+combined.data <- merge(summarize.county.pm10, summarize.county.obesity, by="County")
+with(combined.data[complete.cases(combined.data),], plot(pm10.mean, obesity.mean, cex=0.3, las=1,
+                                                         xlab="PM10 Levels in 1990",
+                                                         ylab="Age Adjusted Percent Obesity"))
+lm.fit <- lm(obesity.mean~pm10.mean, data=combined.data)
+abline(lm.fit)
+
+par(mfrow=c(2,2))
+plot(lm.fit)
+```
+
+The data were not normally distributed (age adjusted obesity, p=`r shapiro.test(combined.data$obesity.mean)$p.value`; particulate matter levels p=`r shapiro.test(combined.data$pm10.mean)$p.value`), so we calculated the correlation coefficient using Spearman's Rank-Based test, which yielded rho=`r with(combined.data, cor.test(obesity.mean,pm10.mean, method="spearman"))$estimate`, rho<sup>2</sup>=`r with(combined.data, cor.test(obesity.mean,pm10.mean, method="spearman"))$estimate^2` and p=`r with(combined.data, cor.test(obesity.mean,pm10.mean, method="spearman"))$p.value`
+
+
+```{r quantile-summary, dev=c('png','pdf'), echo=FALSE}
+combined.data$pm10.quantiles <- cut(combined.data$pm10.mean, 4, labels=F)
+quantile.summary <- ddply(combined.data, .(pm10.quantiles), summarize,
+                          mean.obesity = mean(obesity.mean),
+                          se.obesity = sd(obesity.mean)/sqrt(length(obesity.mean)),
+                          mean.pm = mean(pm10.mean),
+                          se.pm = sd(pm10.mean)/sqrt(length(pm10.mean)))
+
+ymin <- min(quantile.summary$mean.obesity) - max(quantile.summary$se.obesity)
+ymax <- max(quantile.summary$mean.obesity) + max(quantile.summary$se.obesity)
+
+plot <- barplot(as.vector(quantile.summary[quantile.summary$pm10.quantiles%in%c(1,4),c('mean.obesity')]), 
+        las=1, names.arg=c("Lowest Quantile", "Highest Quantile"), 
+        ylab="Percent Age Adjusted Obesity", xlab="Particulate Levels",
+        ylim=c(0,ymax))
+
+superpose.eb <- 
+ function (x, y, ebl, ebu = ebl, length = 0.08, ...) 
+ arrows(x, y + ebu, x, y - ebl, angle = 90, code = 3, 
+ length = length, ...)
+
+superpose.eb(plot, 
+             as.vector(quantile.summary[quantile.summary$pm10.quantiles%in%c(1,4),c('mean.obesity')]),
+             as.vector(quantile.summary[quantile.summary$pm10.quantiles%in%c(1,4),c('se.obesity')]))
+```
+
+We looked at the differences between the upper and lower quantiles of PM<sub>10</sub> levels, and found no difference between the age adjusted obesity rates between these groups by a Wilcoxon Rank Sum Test (p=`r with(subset(combined.data, pm10.quantiles %in% c(1,4)), wilcox.test(obesity.mean~pm10.quantiles))$p.value`).
+
+Session Information
+-------------------
+
+```{r session-info}
+sessionInfo()
+```
