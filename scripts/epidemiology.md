@@ -12,7 +12,7 @@ The PM2.5 data was downloaded from http://www.cdc.gov/diabetes/atlas/countydata/
 According to these data, the counties with the highest age adjusted percent obesity are:
 
 <!-- html table generated in R 3.1.0 by xtable 1.7-3 package -->
-<!-- Sat May 17 12:43:59 2014 -->
+<!-- Sat May 17 13:07:02 2014 -->
 <TABLE border=1>
 <CAPTION ALIGN="bottom"> Top 5 Counties by Age-Adjusted Obesity </CAPTION>
 <TR> <TH>  </TH> <TH> County </TH> <TH> obesity.mean </TH>  </TR>
@@ -31,7 +31,7 @@ Particulate Data
 The PM2.5 data was downloaded from http://aqsdr1.epa.gov/aqsweb/aqstmp/airdata/annual_all_1990.zip and saved to ../data/raw/annual_all_1990.csv.  According to this, in 1990 the counties with the highest particulate matter levels were:
 
 <!-- html table generated in R 3.1.0 by xtable 1.7-3 package -->
-<!-- Sat May 17 12:43:59 2014 -->
+<!-- Sat May 17 13:07:02 2014 -->
 <TABLE border=1>
 <CAPTION ALIGN="bottom"> Top 5 Counties by PM10 Levels in 1990 </CAPTION>
 <TR> <TH>  </TH> <TH> County.Name </TH> <TH> pm10.mean </TH>  </TR>
@@ -52,19 +52,16 @@ Combined Data
 
 The data were not normally distributed (age adjusted obesity, p=6.5465 &times; 10<sup>-10</sup>; particulate matter levels p=1.1425 &times; 10<sup>-18</sup>), so we calculated the correlation coefficient using Spearman's Rank-Based test, which yielded rho=0.1093, rho<sup>2</sup>=0.0119 and p=0.0187
 
+### Quintile Analysis
 
-![plot of chunk quantile-summary](figure/quantile-summary.png) 
+![plot of chunk quintile-summary](figure/quintile-summary.png) 
 
 
-We looked at the differences between the upper and lower quantiles of PM<sub>10</sub> levels, and found no difference between the age adjusted obesity rates between these groups by a Wilcoxon Rank Sum Test (p=0.9813).
+We looked at the differences between the upper and lower quintiles of PM<sub>10</sub> levels in 1990, and found no difference between the age adjusted obesity rates between these groups by a Student's T-Test (p=0.3913).  We did a Student's T-Test because both quintiles had a normal distribution (p=0.1399 and 0.7378 respectively by Shapiro-Wilk Test), and equal variance (p=0.3126 via Levene's Test).
 
 Session Information
 -------------------
 
-
-```r
-sessionInfo()
-```
 
 ```
 ## R version 3.1.0 (2014-04-10)
@@ -77,11 +74,11 @@ sessionInfo()
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
 ## 
 ## other attached packages:
-## [1] xtable_1.7-3   xlsx_0.5.5     xlsxjars_0.6.0 rJava_0.9-6   
-## [5] plyr_1.8.1     knitr_1.5     
+## [1] car_2.0-20     xtable_1.7-3   xlsx_0.5.5     xlsxjars_0.6.0
+## [5] rJava_0.9-6    plyr_1.8.1     knitr_1.5     
 ## 
 ## loaded via a namespace (and not attached):
-## [1] evaluate_0.5.5 formatR_0.10   Rcpp_0.11.1    stringr_0.6.2 
-## [5] tools_3.1.0
+## [1] evaluate_0.5.5 formatR_0.10   MASS_7.3-33    nnet_7.3-8    
+## [5] Rcpp_0.11.1    stringr_0.6.2  tools_3.1.0
 ```
 

@@ -65,19 +65,20 @@ plot(lm.fit)
 
 The data were not normally distributed (age adjusted obesity, p=`r shapiro.test(combined.data$obesity.mean)$p.value`; particulate matter levels p=`r shapiro.test(combined.data$pm10.mean)$p.value`), so we calculated the correlation coefficient using Spearman's Rank-Based test, which yielded rho=`r with(combined.data, cor.test(obesity.mean,pm10.mean, method="spearman"))$estimate`, rho<sup>2</sup>=`r with(combined.data, cor.test(obesity.mean,pm10.mean, method="spearman"))$estimate^2` and p=`r with(combined.data, cor.test(obesity.mean,pm10.mean, method="spearman"))$p.value`
 
+### Quintile Analysis
 
-```{r quantile-summary, dev=c('png','pdf'), echo=FALSE}
-combined.data$pm10.quantiles <- cut(combined.data$pm10.mean, 4, labels=F)
-quantile.summary <- ddply(combined.data, .(pm10.quantiles), summarize,
+```{r quintile-summary, dev=c('png','pdf'), echo=FALSE}
+combined.data$pm10.quintiles <- cut(combined.data$pm10.mean, 5, labels=F)
+quintile.summary <- ddply(combined.data, .(pm10.quintiles), summarize,
                           mean.obesity = mean(obesity.mean),
                           se.obesity = sd(obesity.mean)/sqrt(length(obesity.mean)),
                           mean.pm = mean(pm10.mean),
                           se.pm = sd(pm10.mean)/sqrt(length(pm10.mean)))
 
-ymin <- min(quantile.summary$mean.obesity) - max(quantile.summary$se.obesity)
-ymax <- max(quantile.summary$mean.obesity) + max(quantile.summary$se.obesity)
+ymin <- min(quintile.summary$mean.obesity) - max(quintile.summary$se.obesity)
+ymax <- max(quintile.summary$mean.obesity) + max(quintile.summary$se.obesity)
 
-plot <- barplot(as.vector(quantile.summary[quantile.summary$pm10.quantiles%in%c(1,4),c('mean.obesity')]), 
+plot <- barplot(as.vector(quintile.summary[quintile.summary$pm10.quintiles%in%c(1,5),c('mean.obesity')]), 
         las=1, names.arg=c("Lowest Quantile", "Highest Quantile"), 
         ylab="Percent Age Adjusted Obesity", xlab="Particulate Levels",
         ylim=c(0,ymax))
@@ -88,15 +89,16 @@ superpose.eb <-
  length = length, ...)
 
 superpose.eb(plot, 
-             as.vector(quantile.summary[quantile.summary$pm10.quantiles%in%c(1,4),c('mean.obesity')]),
-             as.vector(quantile.summary[quantile.summary$pm10.quantiles%in%c(1,4),c('se.obesity')]))
+             as.vector(quintile.summary[quintile.summary$pm10.quintiles%in%c(1,5),c('mean.obesity')]),
+             as.vector(quintile.summary[quintile.summary$pm10.quintiles%in%c(1,5),c('se.obesity')]))
+library(car)
 ```
 
-We looked at the differences between the upper and lower quantiles of PM<sub>10</sub> levels, and found no difference between the age adjusted obesity rates between these groups by a Wilcoxon Rank Sum Test (p=`r with(subset(combined.data, pm10.quantiles %in% c(1,4)), wilcox.test(obesity.mean~pm10.quantiles))$p.value`).
+We looked at the differences between the upper and lower quintiles of PM<sub>10</sub> levels in 1990, and found no difference between the age adjusted obesity rates between these groups by a Student's T-Test (p=`r with(subset(combined.data, pm10.quintiles %in% c(1,5)), t.test(obesity.mean~pm10.quintiles, var.equal=T))$p.value`).  We did a Student's T-Test because both quintiles had a normal distribution (p=`r with(subset(combined.data, pm10.quintiles ==1), shapiro.test(obesity.mean))$p.value` and `r with(subset(combined.data, pm10.quintiles==5), shapiro.test(obesity.mean))$p.value` respectively by Shapiro-Wilk Test), and equal variance (p=`r with(subset(combined.data, pm10.quintiles%in%c(1,5)), leveneTest(obesity.mean~as.factor(pm10.quintiles)))$"Pr(>F)"[1]` via Levene's Test).
 
 Session Information
 -------------------
 
-```{r session-info}
+```{r session-info, echo=FALSE}
 sessionInfo()
 ```
